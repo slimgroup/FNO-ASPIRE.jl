@@ -104,18 +104,23 @@ snr = 12f0
 gaussian = 20
 
 for i in n_start:n_end
+    filename = "data/$j/sample_$i.jld2"
+    if isfile(filename)
+        @info "Skipping sample $i as file $filename already exists."
+        continue  # Skip this iteration and move to the next one
+    end
+
     Base.flush(Base.stdout)
     @info "sample $i out of $(size(x_salt)[end]) samples"
     # call function that generate background
-    x_no_salt_i = x_no_salt[:,:,1,i];
+    x_back = x_no_salt[:,:,1,i];
     x_salt_i= x_salt[:,:,1,i]
-    x_back = 1f0./Float32.(imfilter(1f0./x_no_salt_i, Kernel.gaussian(gaussian)))
-    x_salt_sm_i = 1f0./Float32.(imfilter(1f0./x_salt_i, Kernel.gaussian(gaussian)))
+
     # add water bottom
     nwb = 15
     x_back[:, 1:nwb] .= 1.48
     x_salt_i[:, 1:nwb] .= 1.48
-    x_salt_sm_i[:, 1:nwb] .= 1.48
+
     # Set up source structure
     xsrc = convertToCell(ContJitter((n[1]-1)*d[1], nsrc))
     srcGeometry = Geometry(xsrc, ysrc, zsrc; dt=dtD, t=timeD)
@@ -145,7 +150,7 @@ for i in n_start:n_end
         rtm[:,:,z] .*= z * d[2]
     end
 
-    JLD2.@save "data/$j/sample_$i.jld2" rtm
+    JLD2.@save filename rtm
 
     if false
         plot_velocity(x_back', d, perc=95, vmax=4.8, aspect=true, name="idx=$i"); 
