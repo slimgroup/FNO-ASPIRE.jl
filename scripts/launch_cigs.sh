@@ -22,7 +22,7 @@ do
 #SBATCH --gpus-per-task=1
 #SBATCH --gpu-bind=none
 #SBATCH --qos=regular
-#SBATCH --job-name=GEN_CIG_nsample=${i}_iteration_j=${j}
+#SBATCH --job-name=GEN_CIG_proc=${i}_iteration_j=${j}
 #SBATCH --mail-user=richardr2926@gmail.com
 #SBATCH --mail-type=ALL
 #SBATCH --time=01:10:00
