@@ -23,17 +23,17 @@ nc_lift = 32
 nblocks = 4
 mx, mz, mh = 36, 36, 1
 
-params = Config.get_parameters()
-offset_is_nz = 0
-
 nbatch, epochs, j, ntrain, nvalid = 8, 2, 1, 16, 8
 nbatch, epochs, j, ntrain, nvalid = parse.(Int, ARGS[1:5])
 
-nx = params["nx"]
-nz = params["nz"]
-offsets = params["n_offsets"]
+params = Config.get_parameters()
 
-use_nz = Bool(offset_is_nz)
+offsets = params["n_offsets"]
+down_rate = params["down_rate"]
+nx = params["nx"] ÷ 2
+nz = params["nz"] ÷ 2
+
+use_nz = false
 labels = @strdict use_nz offsets nbatch epochs ntrain nvalid j
 
 nc_in = use_nz ? 7 : offsets + 1 + 1 + 4 # offsets + 2 velocity models + indices
@@ -72,7 +72,7 @@ trainConfig = DFNO_3D.TrainConfig(
     y_train=y_train,
     x_valid=nvalid == 0 ? x_train : x_valid,
     y_valid=nvalid == 0 ? y_train : y_valid,
-    plot_every=10,
+    plot_every=5,
     nbatch=nbatch
 )
 

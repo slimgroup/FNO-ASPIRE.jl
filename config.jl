@@ -4,8 +4,8 @@ export get_parameters
 
 function get_parameters()
     return Dict(
-        "nx" => 256,
-        "nz" => 128,
+        "nx" => 512,
+        "nz" => 256,
         "n_offsets" => 21,
         "down_rate" => 2,
         "read_offset_start" => 1,

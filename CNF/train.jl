@@ -31,8 +31,8 @@ offset_start = 1
 keep_offset_num = 21
 d = (12.5f0, 12.5f0)
 
-save_every   = 10
-plot_every   = 10
+save_every   = 5
+plot_every   = 5
 n_condmean   = 12
 num_post_samples = 64
 
@@ -50,14 +50,19 @@ isdir(plot_path) || mkpath(plot_path)
 
 target_train = x[:, :, :, 1:ntrain]
 target_test = x[:, :, :, ntrain+1:ntrain+ntest]
-Y_train = CIGs[:, :, :, 1:ntrain]
-Y_test = CIGs[:, :, :, ntrain+1:ntrain+ntest]
+Y_train = CIGs[:, :, :, 1, 1:ntrain]
+Y_test = CIGs[:, :, :, 1, ntrain+1:ntrain+ntest]
 
+Y_train = permutedims(Y_train, [2, 3, 1, 4])
+Y_test = permutedims(Y_test, [2, 3, 1, 4])
+ 
 n = (size(target_train)[1], size(target_train)[2])
-for z = 1:n[2]
-	Y_train[:,z,:,:] .*= z * d[2]
-	Y_test[:,z,:,:] .*= z * d[2]
-end
+
+# Depth Scaling Already Done in Simulate
+# for z = 1:n[2]
+# 	Y_train[:,z,:,:] .*= z * d[2]
+# 	Y_test[:,z,:,:] .*= z * d[2]
+# end
 
 # normalize CIGs
 max_y = quantile(abs.(vec(Y_train)),0.9999);
@@ -286,7 +291,8 @@ for e=1:n_epochs # epoch loop
 		G_save = deepcopy(G);
 		reset!(G_save.sum_net); # clear params to not save twice
 		Params = get_params(G_save) |> cpu;
-		save_dict = @strdict chan_obs unet_lev unet_model n_train e noise_lev_x noise_lev_init lr n_hidden L K Params loss logdet_train l2_cm ssim loss_test logdet_test l2_cm_test ssim_test batch_size offset_start # offset_end n_offsets keep_offset_num; 
+		# save_dict = @strdict chan_obs unet_lev unet_model n_train e noise_lev_x noise_lev_init lr n_hidden L K Params loss logdet_train l2_cm ssim loss_test logdet_test l2_cm_test ssim_test batch_size offset_start # offset_end n_offsets keep_offset_num; 
+		save_dict = @strdict n_train e unet_lev n_hidden L K Params unet_model
 		@tagsave(
 			joinpath(weights_path, savename(save_dict, "bson"; digits=6)),
 			save_dict;

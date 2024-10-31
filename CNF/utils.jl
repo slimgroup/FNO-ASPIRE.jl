@@ -271,7 +271,7 @@ end
 
 
 
-function load_trained_network(net_path, chan_obs)
+function load_trained_network(net_path, chan_obs; device=gpu)
     # n_x, n_y, chan_target, n_test = size(X_test)
     # N = n_x*n_y*chan_target
     chan_cond = 1
@@ -303,7 +303,6 @@ function load_trained_network(net_path, chan_obs)
     G        = SummarizedNet(cond_net, unet)
     
     Params = BSON.load(net_path)["Params"]; 
-    noise_lev_x = BSON.load(net_path)["noise_lev_x"]; 
     set_params!(G,Params)
     
     # Load in unet summary net
@@ -313,16 +312,109 @@ function load_trained_network(net_path, chan_obs)
     return G
 end
 
+function plot_cig(cig, plot_path, cig_img_fname, params)
+    println("start plotting CIG")
+    cig_fs = 40
+    d = params["d"]
+    down_rate = params["down_rate"]
 
+    nx = params["nx"] ÷ down_rate
+    nz = params["nz"] ÷ down_rate
 
+    n = (nx, nz)
+    n_offsets = params["n_offsets"]
+    offset_start = params["offset_start"]
+    offset_end = params["offset_end"]
 
+    # start plotting
+    y = cig
 
+    PyPlot.rc("figure", titlesize=cig_fs)
+    PyPlot.rc("font", family="serif"); PyPlot.rc("xtick", labelsize=cig_fs); PyPlot.rc("ytick", labelsize=cig_fs)
+    PyPlot.rc("axes", labelsize=cig_fs)     # Default fontsize for x and y labels
+    PyPlot.rc("axes", titlesize=cig_fs)     # Default fontsize for titles
 
+    ### X, Z position in km
+    xpos = 3.4f3 ÷ 2
+    zpos = 2.4f3 ÷ 2
+    xgrid = Int(round(xpos / d[1]))
+    zgrid = Int(round(zpos / d[2]))
 
+    # Create a figure and a 2x2 grid of subplots
+    fig, axs = subplots(2, 2, figsize=(20,12), gridspec_kw = Dict("width_ratios" => [3, 1], "height_ratios" => [1, 3]))
+    # Adjust the spacing between the plots
+    subplots_adjust(hspace=0.0, wspace=0.0)
 
+    vmin1, vmax1 = (-1, 1) .* quantile(abs.(vec(y[:,zgrid,:,1])), 0.99)
+    vmin2, vmax2 = (-1, 1) .* quantile(abs.(vec(y[:,:,div(n_offsets,2)+1,1])), 0.88)
+    vmin3, vmax3 = (-1, 1) .* quantile(abs.(vec(y[xgrid,:,:,1])), 0.999)
+    sca(axs[1, 1])
+    # Top left subplot
+    axs[1, 1].imshow(y[:,zgrid,:,1]', aspect="auto", cmap="gray", interpolation="none",vmin=vmin1, vmax=vmax1,
+    	extent=(0f0, (n[1]-1)*d[1], offset_start, offset_end))
+    axs[1, 1].set_ylabel("Offset [m]", fontsize=cig_fs)
+    axs[1, 1].set_xticklabels([])
+    axs[1, 1].set_xlabel("")
+    hlines(y=0, colors=:b, xmin=0, xmax=(n[1]-1)*d[1], linewidth=3)
+    vlines(x=xpos, colors=:b, ymin=offset_start, ymax=offset_end, linewidth=3)
+    # Bottom left subplot
+    sca(axs[2, 1])
+    axs[2, 1].imshow(y[:,:,div(n_offsets,2)+1,1]', aspect="auto", cmap="gray", interpolation="none",vmin=vmin2, vmax=vmax2,
+    extent=(0f0, (n[1]-1)*d[1], (n[2]-1)*d[2], 0f0))
+    axs[2, 1].set_xlabel("X [m]", fontsize=cig_fs)
+    axs[2, 1].set_ylabel("Z [m]", fontsize=cig_fs)
+    axs[2, 1].set_xticks([0, 1000, 2000, 3000, 4000, 5000])
+    axs[2, 1].set_xticklabels(["0", "1000", "2000", "3000", "4000", "5000"])
+    axs[2, 1].set_yticks([1000, 2000, 3000])
+    axs[2, 1].set_yticklabels(["1000", "2000", "3000"])
+    # axs[2, 2].get_shared_x_axes().join(axs[1, 1], axs[2, 1])
+    vlines(x=xpos, colors=:b, ymin=0, ymax=(n[2]-1)*d[2], linewidth=3)
+    hlines(y=zpos, colors=:b, xmin=0, xmax=(n[1]-1)*d[1], linewidth=3)
+    # Top right subplot
+    axs[1, 2].set_visible(false)
+    # Bottom right subplot
+    sca(axs[2, 2])
+    axs[2, 2].imshow(y[xgrid,:,:,1], aspect="auto", cmap="gray", interpolation="none",vmin=vmin3, vmax=vmax3,
+    extent=(offset_start, offset_end, (n[2]-1)*d[2], 0f0))
+    axs[2, 2].set_xlabel("Offset [m]", fontsize=cig_fs)
+    # Share y-axis with bottom left
+    # axs[2, 2].get_shared_y_axes().join(axs[2, 2], axs[2, 1])
+    axs[2, 2].set_yticklabels([])
+    axs[2, 2].set_ylabel("")
+    vlines(x=0, colors=:b, ymin=0, ymax=(n[2]-1)*d[2], linewidth=3)
+    hlines(y=zpos, colors=:b, xmin=offset_end, xmax=offset_start, linewidth=3)
+    # Remove the space between subplots and hide the spines
+    for ax in reshape(axs, :)
+        for spine in ["top", "right", "bottom", "left"]
+            ax.spines[spine].set_visible(false)
+        end
+    end
 
+    PyPlot.savefig(joinpath(plot_path, cig_img_fname), bbox_inches="tight", dpi=300);
+    close(fig)
+    
+    # Zoom in offset image
+    PyPlot.rcdefaults()
+    matplotlib.pyplot.close()
+end
 
+function plot_velocity_model(x, filename, params)
+    vmin = quantile(vec(x), 0.05)  # 5th percentile
+    vmax = quantile(vec(x), 0.95)  # 95th percentile
 
+    d = params["d"]
+    down_rate = params["down_rate"]
 
+    nx = params["nx"] ÷ down_rate
+    nz = params["nz"] ÷ down_rate
 
-# end
+    n = (nx, nz)
+
+    fig, ax = subplots(figsize=(20,12)) 
+    extentfull = (0f0, (n[1]-1)*d[1], (n[end]-1)*d[end], 0f0)
+    cax = ax.imshow(x', vmin=vmin, vmax=vmax, extent=extentfull, aspect=0.45*(extentfull[2]-extentfull[1])/(extentfull[3]-extentfull[4]))
+    ax.set_xlabel("X [m]", fontsize=40)
+    ax.set_ylabel("Z [m]", fontsize=40)
+    savefig(filename, bbox_inches="tight", dpi=300)
+    close(fig)
+end
