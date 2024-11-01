@@ -28,8 +28,8 @@ srun julia --project=CIG/ CIG/collect_cigs.jl j nsamples
 3. Train CNF and FNO parallely
 
 ```
-sh scripts/train_FNO.sh ntrain j epochs
-sh scripts/train_CNF.sh ntrain j epochs
+sh scripts/train_fno.sh ntrain j epochs
+sh scripts/train_cnf.sh ntrain j epochs
 ```
 
 Clean Directories # TODO: Fix inside `ParametricDFNOs.jl`
@@ -79,8 +79,8 @@ pus-per-task=1 --gpu-bind=none
 srun julia --project=FNO/ FNO/train.jl 2 2 0 2 2
 srun julia --project=CNF/ CNF/train.jl 2 2 0 2 2
 
-sh scripts/train_FNO.sh 800 1 80
-sh scripts/train_CNF.sh 800 1 70
+sh scripts/train_fno.sh 800 1 80
+sh scripts/train_cnf.sh 800 1 200
 
 sh scripts/update_fiducial 1 850
 ```
