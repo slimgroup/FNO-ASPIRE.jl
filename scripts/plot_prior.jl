@@ -21,14 +21,18 @@ function plot_vel(x, filename; smooth=false, gaussian=20)
     close()
 end
 
-@load "data/posteriors_iteration_j=0.jld2" x0
+@load "data/posteriors_iteration_j=1.jld2" x0
 x = x0
 
-@load "data/synthoseis_no_salt.jld2" data
-x = data[1:down_rate:end, 1:down_rate:end, :, :]
+for i in 1:10
+    plot_vel(x0[:, :, 1, i]', "plots/posterior_1_$(i)_sample.png")
+end
 
-# @load "data/initial.jld2" x
+# @load "data/synthoseis_no_salt.jld2" data
+# x = data[1:down_rate:end, 1:down_rate:end, :, :]
 
-plot_vel(x[:, :, 1, 1]', "plots/no_salt.png")
-plot_vel(x0[:, :, 1, 1]', "plots/no_salt_smoothed.png")
-plot_vel(x[:, :, 1, 1]', "plots/no_salt_smoothed_true.png", smooth=true)
+# # @load "data/initial.jld2" x
+
+# plot_vel(x[:, :, 1, 1]', "plots/no_salt.png")
+# plot_vel(x0[:, :, 1, 1]', "plots/no_salt_smoothed.png")
+# plot_vel(x[:, :, 1, 1]', "plots/no_salt_smoothed_true.png", smooth=true)

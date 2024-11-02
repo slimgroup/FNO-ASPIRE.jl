@@ -74,13 +74,10 @@ sh scripts/launch_cigs.sh 1 850 34
 salloc --nodes=1 --constraint=gpu --gpus=1 --qos=interactive --time=04:00:00 --account=m3863_g --ntasks=1 --gpus-per-task=1 --gpu-bind=none
 srun julia --project=CIG/ CIG/collect_cigs.jl 1 850
 
-salloc --nodes=1 --constraint=gpu --gpus=1 --qos=interactive --time=04:00:00 --account=m3863_g --ntasks=1 --g
-pus-per-task=1 --gpu-bind=none
-srun julia --project=FNO/ FNO/train.jl 2 2 0 2 2
-srun julia --project=CNF/ CNF/train.jl 2 2 0 2 2
 
-sh scripts/train_fno.sh 800 1 80
+srun julia --project=CNF/ CNF/train.jl 2 2 0 2 2
+sh scripts/train_fno.sh 800 1 80 4
 sh scripts/train_cnf.sh 800 1 200
 
-sh scripts/update_fiducial 1 850
+julia --project=CNF/ CNF/update_fiducials.jl 1 850 800 165
 ```

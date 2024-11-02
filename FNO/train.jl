@@ -3,6 +3,7 @@ using ParametricDFNOs.DFNO_3D
 using DrWatson
 using MPI
 using CUDA
+using Statistics
 
 include("utils.jl")
 include("../config.jl")
@@ -19,11 +20,11 @@ pe_count = MPI.Comm_size(comm)
 CUDA.device!(rank % 4)
 partition = [1,pe_count]
 
-nc_lift = 32
+nc_lift = 48
 nblocks = 4
-mx, mz, mh = 36, 36, 1
+mx, mz, mh = 72, 72, 1
 
-nbatch, epochs, j, ntrain, nvalid = 8, 2, 1, 16, 8
+nbatch, epochs, j, ntrain, nvalid = 1, 50, 1, 1, 0
 nbatch, epochs, j, ntrain, nvalid = parse.(Int, ARGS[1:5])
 
 params = Config.get_parameters()
@@ -65,6 +66,11 @@ model = DFNO_3D.Model(modelConfig)
 # # To train from a checkpoint
 # filename = "mt=25_mx=10_my=10_mz=10_nblocks=20_nc_in=5_nc_lift=20_nc_mid=128_nc_out=1_nd=20_nt=51_nx=20_ny=20_nz=20_p=8.jld2"
 # DFNO_3D.loadWeights!(θ, filename, "θ_save", partition)
+
+# Normalize CIGs
+max_y = quantile(abs.(vec(y_train)), 0.9999);
+y_train ./= max_y;
+y_valid ./= max_y;
 
 trainConfig = DFNO_3D.TrainConfig(
     epochs=epochs,
