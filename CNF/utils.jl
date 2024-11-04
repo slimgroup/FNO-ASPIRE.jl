@@ -315,8 +315,8 @@ end
 function plot_cig(cig, plot_path, cig_img_fname, params)
     println("start plotting CIG")
     cig_fs = 40
-    d = params["d"]
     down_rate = params["down_rate"]
+    d = params["d"] .* down_rate
 
     nx = params["nx"] ÷ down_rate
     nz = params["nz"] ÷ down_rate
